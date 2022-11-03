@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Biological Learning and Rehabilitation Group, CMC Vellore</author>
+ <class>ArimuHub</class>
+ <widget class="QMainWindow" name="ArimuHub">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>223</width>
+    <height>203</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>223</width>
+    <height>203</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>223</width>
+    <height>203</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Bahnschrift Light</family>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::NoContextMenu</enum>
+  </property>
+  <property name="windowTitle">
+   <string>Arimu Hub</string>
+  </property>
+  <property name="statusTip">
+   <string/>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>201</width>
+      <height>141</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QPushButton" name="btn_dev_manager">
+       <property name="text">
+        <string>Device Manager</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_data_reader">
+       <property name="text">
+        <string>Data Reader</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_streaming">
+       <property name="text">
+        <string>Stream Viewer</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_about">
+       <property name="text">
+        <string>About</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>-240</x>
+      <y>620</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_title">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>201</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 20pt &quot;Bahnschrift Light&quot;;
+color: rgb(170, 0, 0);
+</string>
+    </property>
+    <property name="text">
+     <string>Arimu Hub</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

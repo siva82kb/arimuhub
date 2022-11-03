@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Sivakumar Balasubramanian</author>
+ <class>ArimuDevManager</class>
+ <widget class="QMainWindow" name="ArimuDevManager">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>815</width>
+    <height>435</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Bahnschrift Light</family>
+    <pointsize>10</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Arimu Device Manager</string>
+  </property>
+  <property name="statusTip">
+   <string/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>281</width>
+      <height>214</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="btn_refresh_com">
+       <property name="text">
+        <string>Refresh COM Ports</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QListWidget" name="list_com_ports"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_connect_com">
+       <property name="text">
+        <string>Connect</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>70</y>
+      <width>511</width>
+      <height>351</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QPlainTextEdit" name="text_console">
+       <property name="font">
+        <font>
+         <family>Anonymous Pro</family>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+       <property name="midLineWidth">
+        <number>0</number>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="lbl_status">
+       <property name="font">
+        <font>
+         <family>Anonymous Pro</family>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QLabel" name="lbl_title">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>-8</y>
+      <width>741</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 20pt &quot;Bahnschrift Light&quot; ;
+color: rgb(170, 0, 0);
+
+</string>
+    </property>
+    <property name="text">
+     <string>  Arimu Device Manager</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="text_arimu_dev_details">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>260</y>
+      <width>281</width>
+      <height>161</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Anonymous Pro</family>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+    <property name="plainText">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>40</y>
+      <width>511</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="btn_set_time">
+       <property name="text">
+        <string>Set Current Time</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_set_subjname">
+       <property name="text">
+        <string>Set Subject Name</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_get_files">
+       <property name="text">
+        <string>Get List of Files</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_get_file_data">
+       <property name="text">
+        <string>Get File Data</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

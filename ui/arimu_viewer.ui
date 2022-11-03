@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ARIMUViewer</class>
+ <widget class="QMainWindow" name="ARIMUViewer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>721</width>
+    <height>548</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ARIMU Viewer</string>
+  </property>
+  <property name="statusTip">
+   <string/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QGroupBox" name="gb_arimu_commands">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>151</width>
+      <height>231</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>ARIMU General Commands</string>
+    </property>
+    <widget class="QWidget" name="layoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>131</width>
+       <height>199</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QPushButton" name="btn_ping">
+        <property name="text">
+         <string>Ping</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_get_current_filename">
+        <property name="text">
+         <string>Get Current  File Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_get_time">
+        <property name="text">
+         <string>Get Time</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_get_subjname">
+        <property name="text">
+         <string>Get Subject Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_start_stop_normal">
+        <property name="text">
+         <string>Start Normal</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_start_stop_expt">
+        <property name="text">
+         <string>Start Experiment</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_start_stop_stream">
+        <property name="text">
+         <string>Start Streaming</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>11</x>
+      <y>12</y>
+      <width>151</width>
+      <height>70</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>List of ARIMUs:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cb_com_devices"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_connect_com">
+       <property name="text">
+        <string>Connect</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>10</y>
+      <width>541</width>
+      <height>491</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QLabel" name="lbl_status">
+       <property name="font">
+        <font>
+         <family>Anonymous Pro</family>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPlainTextEdit" name="text_console">
+       <property name="font">
+        <font>
+         <family>Anonymous Pro</family>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+       <property name="midLineWidth">
+        <number>0</number>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="lbl_stream">
+       <property name="font">
+        <font>
+         <family>Anonymous Pro</family>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="gb_arimu_dockstn">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>330</y>
+      <width>151</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Docking Station Mode</string>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
+    <widget class="QWidget" name="layoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>131</width>
+       <height>141</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <widget class="QPushButton" name="btn_set_time">
+        <property name="text">
+         <string>Set Current Time</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_set_subjname">
+        <property name="text">
+         <string>Set Subject Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_get_files">
+        <property name="text">
+         <string>Get List of Files</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_get_file_data">
+        <property name="text">
+         <string>Get File Data</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_delete_file">
+        <property name="text">
+         <string>Delete File</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>721</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

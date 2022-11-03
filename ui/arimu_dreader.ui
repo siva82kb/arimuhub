@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ArimuDataReader</class>
+ <widget class="QMainWindow" name="ArimuDataReader">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>792</width>
+    <height>432</height>
+   </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>792</width>
+    <height>598</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Bahnschrift Light</family>
+    <pointsize>11</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Arimu Data Reader</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="lbl_title">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>281</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 20pt &quot;Bahnschrift Light&quot; ;
+color: rgb(170, 0, 0);
+
+</string>
+    </property>
+    <property name="text">
+     <string>  Arimu Data Reader</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_datetime">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>9</y>
+      <width>421</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Anonymous Pro</family>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_console">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>50</y>
+      <width>591</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Anonymous Pro</family>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(0, 0, 0);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+    </property>
+    <property name="margin">
+     <number>10</number>
+    </property>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>171</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="btn_refresh_comports">
+       <property name="text">
+        <string>Refresh COM Ports</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QListWidget" name="list_comports">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::MultiSelection</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_start_data_reading">
+       <property name="text">
+        <string>Start Reading</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
