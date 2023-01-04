@@ -58,16 +58,16 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
     """Main window of the ARIMU Viewer.
     """
     close_signal = pyqtSignal()
-    
+
     def __init__(self, *args, **kwargs) -> None:
         """View initializer."""
         super(ArimuDeviceManager, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        
+
         # Fix size.
         self.setFixedSize(self.geometry().width(),
                           self.geometry().height())
-        
+
         # Arimu Client.
         self._comport = ""
         self._client = None
@@ -87,7 +87,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
                                "devname" : 100}
         self._updatecnt = 0
         self._statusdisp = False
-        
+
         # File saving related variables.,
         self._flist = []
         self._flist_temp = []
@@ -95,17 +95,17 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         self._currfiledetails = None
         self._strm_disp_cnt = 0
         self._dockstn_enable = False
-        
+
         # stream logging.
         self._strm_fname = ""
         self._strm_fhndl = None
-        
+
         # Welcome message
         self.display("Welcome to the Arimu Device Manager", False)
-        
+
         # Get the list of ARIMU devices.
         self.update_list_of_comports()
-        
+
         # ARIMU Response Handler.
         self._arimu_resp_hndlrs = {
             ArimuCommands.STATUS: self._handle_status_response,
@@ -128,7 +128,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
             ArimuCommands.STOPNORMAL: self._handle_stopnormal_response,
             ArimuCommands.SETTONONE: self._handle_settonone_response
         }
-        
+
         # Attach callbacks.
         self.list_com_ports.itemSelectionChanged.connect(self._callback_com_item_changed)
         self.btn_refresh_com.clicked.connect(self._callback_refresh_comports)
@@ -137,7 +137,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         self.btn_set_subjname.clicked.connect(self._callback_set_subjname_arimu)
         self.btn_get_files.clicked.connect(self._callback_get_files_arimu)
         self.btn_get_file_data.clicked.connect(self._callback_get_file_data_arimu)
-        
+
         # Populate the list of ARIMU devices.
         self._timer = QTimer()
         self._timer.timeout.connect(self._callback_status_time)
@@ -172,6 +172,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
     def update_list_of_comports(self):
         # Clear the current list.
         self.list_com_ports.clear()
+        print(comports())
         for p in comports():
             self.list_com_ports.addItem(p.name)
     
@@ -289,10 +290,10 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         _ts = (f'{_temp[0]:02d}/{_temp[1]:02d}/{_temp[2]:02d}'
                + f' {_temp[3]:02d}:{_temp[4]:02d}:{_temp[5]:02d}.{_temp[6]:02d}')
         self._currt = _ts
-    
+
     def _handle_settime_response(self, payload):
         # First set the device in the DockingStationMode.
-        
+
         _pldbytes = [bytearray(payload[i:i+4])
                      for i in range(0, 28, 4)]
         # Group payload components.
@@ -304,16 +305,16 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         # Micros data.
         _microst = struct.unpack('<L', bytearray(payload[28:32]))[-1]
         self.display_response(f"Current time: {_currt} | Micros: {_microst} us")
-    
+
     def _handle_setsubject_response(self, payload):
         self.display_response(f"Current subject: {bytearray(payload).decode()}")
-        
+
     def _handle_getsubject_response(self, payload):
         self._subjname = bytearray(payload).decode()
-    
+
     def _handle_currentfilename_response(self, payload):
         self._currdevfname = bytearray(payload).decode()
-    
+
     def _handle_listfiles_response(self, payload):
         # Decode nad build file list.
         # 1. check if this is the start of file list.
@@ -333,7 +334,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
                 self._flist_temp += bytearray(payload).decode()[0:-1].split(",")
         if len(self._flist) != 0:
             self.display_response(f"List of fisles ({len(self._flist)}):\n{' | '.join(self._flist)}")
-    
+
     def _init_file_to_get_details(self, fname:str) -> attrdict.AttrDict:
         """Initializes an attribute dict with the details of the file to
         be read from ARIMU."""
@@ -487,8 +488,8 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         if ok:
             # Set the device in the docking station mode.
             self._client.send_message([ArimuCommands.STARTDOCKSTNCOMM])
-            time.sleep(0.5) 
-            self._currfname = _file            
+            time.sleep(0.5)
+            self._currfname = _file
             self.display(f"Get file data ... {self._currfname}")
             self._client.send_message(bytearray([ArimuCommands.GETFILEDATA])
                                     + bytearray(self._currfname, "ascii")
@@ -498,7 +499,7 @@ class ArimuDeviceManager(QtWidgets.QMainWindow, Ui_ArimuDevManager):
         _file, ok = QInputDialog.getItem(self, "Which file?", 
                                          "Select file: ", self._flist,
                                          0, False)
-        if ok:                        
+        if ok:
             self._currfname = _file
             self.display(f"Delete file ... {self._currfname}")
             self._client.send_message(bytearray([ArimuCommands.DELETEFILE])

@@ -6,6 +6,7 @@ Email: siva82kb@gmail.com
 """
 
 from concurrent.futures import thread
+import struct
 import sys
 from datetime import datetime as dt
 from datetime import timedelta as tdel
@@ -73,12 +74,14 @@ class ArimuDocWorker(QObject):
     ARIMU_FILELIST_TIMEOUT = 5.0
     # Maximum exception per state before a full reset.
     ARIMU_MAX_EXCEPT_COUNT = 5
-    
+
     # Different signals used to communicate with external PyQT programs.
     connect_response = pyqtSignal(str)
     delayed_respose = pyqtSignal(ArimuCommands)
     file_list = pyqtSignal(list)
-    
+    file_data = pyqtSignal(list)
+
+
     def __init__(self, comport, subject, outdir, donotdelete=False):
         super(ArimuDocWorker, self).__init__()
         self.comport: str = comport
@@ -117,15 +120,17 @@ class ArimuDocWorker(QObject):
         #
         # ARIMU device variables.
         # self.init_arimu_dev_variables()
-    
+
     @property
     def state(self):
+        """State property"""
         return self._state
-    
+
     @property
     def comfound(self):
+        """COM port found property"""
         return self._comfound
-    
+
     def connect(self):
         """Try to connect the given COM port and return true if the device
         is an ARIMU."""
@@ -138,7 +143,7 @@ class ArimuDocWorker(QObject):
                             self._update_connect_status)
         self._client.send_message([ArimuCommands.PING])
         self.resp.timer.start()
-    
+
     def get_filelist(self):
         """Gets the list of file names from the ARIMU device, and informs
         about the final list."""
@@ -146,17 +151,40 @@ class ArimuDocWorker(QObject):
         if self._arimustate != ArimuStates.DOCKSTNCOMM:
             # First set the device in the docking station mode.
             # Set the device in the docking station mode.
+            print("--")
             self.setup_response(ArimuCommands.STARTDOCKSTNCOMM,
                                 self._update_docstnstart)
             self._dockstn_start_function = self.get_filelist
             self._client.send_message([ArimuCommands.STARTDOCKSTNCOMM])
             self.resp.timer.start()
             return
-        
+
         # Now get the list of files.
         self.setup_response(ArimuCommands.LISTFILES,
                             self._update_filelist)
         self._client.send_message([ArimuCommands.LISTFILES])
+        self.resp.timer.start()
+
+    def get_file_data(self, filename):
+        """Gets the data from the ARIMU device for the given file name, and
+        informs when data is available."""
+        # Check if the device is in the dockstation mode.
+        if self._arimustate != ArimuStates.DOCKSTNCOMM:
+            # First set the device in the docking station mode.
+            # Set the device in the docking station mode.
+            self.setup_response(ArimuCommands.STARTDOCKSTNCOMM,
+                                self._update_docstnstart)
+            self._dockstn_start_function = self.get_file_data
+            self._client.send_message([ArimuCommands.STARTDOCKSTNCOMM])
+            self.resp.timer.start()
+            return
+
+        # Noe get thr file data.
+        self.setup_response(ArimuCommands.GETFILEDATA,
+                            self._update_filedata)
+        self._client.send_message(bytearray([ArimuCommands.GETFILEDATA])
+                                  + bytearray(filename, "ascii")
+                                  + bytearray([0]))
         self.resp.timer.start()
 
     def _delayed_response_handler(self):
@@ -164,6 +192,7 @@ class ArimuDocWorker(QObject):
         for a sent command."""
         # Check if the response was obtained.
         # print("response not found")
+        print(self.resp.msgtype)
         if self.resp.msgtype != None:
             # No response receied for some time. Cancel response, and inform
             # about the lack of response.
@@ -228,6 +257,33 @@ class ArimuDocWorker(QObject):
         if _str[-1] == ']':
             # Clear file list and include only non-zero length file names.
             self.file_list.emit([])
+            
+    def _update_filedata(self, pl):
+        """Update the file data on the device.
+        """
+        if pl[0] == ArimuAdditionalFlags.NOFILE:
+            self.file_data.emit([ArimuAdditionalFlags.NOFILE,])
+        elif pl[0] == ArimuAdditionalFlags.FILEHEADER:
+            # Unpack and emit file details.
+            _totsz = struct.unpack('<L', bytearray(pl[1:5]))[0]
+            self.file_data.emit([ArimuAdditionalFlags.FILEHEADER, _totsz])
+        # elif pl[0] == ArimuAdditionalFlags.FILECONTENT:
+        #     # Write to file.
+        #     self._currfiledetails.currsz += len(pl[2:])
+        #     # Update progress bar
+        #     _pbstr, _prcnt = self._currfiledetails.prgbar.update(pl[1])
+        #     self._currfiledetails.handle.write(bytearray(pl[2:]))
+        #     # Display string
+        #     _str = [f"|{_pbstr}|",
+        #             f"[{_prcnt:6.2f}%]",
+        #             f"[{self._currfiledetails.currsz/1024:8.2f}kB /",
+        #             f"{self._currfiledetails.totalsz/1024:8.2f}kB]",]
+        #     self.lbl_status.setText(f"{' '.join(_str)}")
+        #     # Check if the file has been obtained.
+        #     if _prcnt >= 100:
+        #         self._statusdisp = False
+        #         self._currfiledetails.handle
+        #         self.display_response(f"File data reading done! File {self._currfiledetails.name} saved!")
     
     def _update_docstnstart(self, pl):
         """Function to handle when the DOCKSTATION mode is started.

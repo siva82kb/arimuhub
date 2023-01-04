@@ -5,7 +5,11 @@ Date: 01 October 2022
 email: siva82kb@gmail.com
 """
 
+import glob
+import itertools
+import json
 import sys
+import threading
 import attrdict
 from datetime import datetime as dt
 import enum
@@ -48,10 +52,10 @@ class ArmuRecorderStates(enum.Enum):
     FindingSensors = 1
     SensorsNotFound = 2
     SensorsNotSelected = 3
-    WaitingToStart = 4
+    WAITINGTOSTART = 4
     WaitingToRecordTask = 5
     RecordingTask = 6
-    AllDone = 7
+    ALLDONE = 7
 
 
 class DockStnReports(enum.Enum):
@@ -64,74 +68,85 @@ class DockStnReports(enum.Enum):
 
 
 class ArimuDataReaderStates(enum.Enum):
-    WaitingToStart = 0
-    ConnectToDevice = 1
-    GetFileList = 2
-    ReadingFilesStart = 3
-    ReadingFilesLogging = 4
-    ReadingFilesDone = 5
-    DoneAllReading = 6
+    WAITINGTOSTART = 0
+    CONNECTTODEVICE = 1
+    GETFILELIST = 2
+    READINGFILESSTART = 3
+    READINGFILESLOGGING = 4
+    DELETINGFILES = 5
+    ALLDONE = 6
 
 
 class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
     """Main window of the ARIMU Data Reader.
     """
     close_signal = pyqtSignal()
-    
+
     def __init__(self, *args, **kwargs) -> None:
         """View initializer."""
         super(ArimuDataReader, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        
+
         # Fix size.
         self.setFixedSize(self.geometry().width(),
                           self.geometry().height())
-        
+
         # Set up console variables
         self._max_lines = 37
         self._console_text = []
         self.display_text("ARIMU Data Reader")
         self.display_text("-----------------")
         self.display_text("Please selecte ARIMUs to read data from.")
-        
+
         # Search COM ports with ARIMUs connected.
         self._comports = []
         self._connected = False
         self.update_list_of_comports()
-        
+
         # Data reader statemachine.
-        self._state : ArimuDataReaderStates = ArimuDataReaderStates.WaitingToStart
+        self._state : ArimuDataReaderStates = ArimuDataReaderStates.WAITINGTOSTART
         self._setup_statehandlrs()
-        
+
         # ARIMU workers to get the data.
         self.arimuwrkr = None
         self.outdir = "subjectdata"
-        self.arimudata = attrdict.AttrDict({"allfilelist": None,
-                                            "subjfilelist": None,
-                                            "filename": None,
-                                            "filedata": None})
-        
+        self.arimudata = {"allfiles": [],
+                          "subjs": [],
+                          "toget": [],
+                          "got": [],
+                          "notgot": [],
+                          "currfilename": [],
+                          "currfiledata": []}
+
+        # ARIMU individual file reading flag.
+        self._readingcurrfile = False
+
         # Attach callbacks
         self.list_comports.itemSelectionChanged.connect(self._callback_com_item_changed)
         self.btn_refresh_comports.clicked.connect(self._callback_refresh_comports)
         self.btn_start_data_reading.clicked.connect(self._callback_start_reading)
-        
+
         # Update UI
         self.update_ui()
-        
+
         # Populate the list of ARIMU devices.
         self._datetimer = QTimer()
         self._datetimer.timeout.connect(self._callback_datetimer)
         self._datetimer.start(1000)
+        # A Timer that is activated when the data reading is in progress.
+        self._data_read_progress_timer = QTimer()
+        self._data_read_progress_timer.timeout.connect(self._callback_data_read_progress_timer)
+        # self._data_read_progress_timer.start(1000)
+        
         self.update_ui()
-    
+
     def update_list_of_comports(self):
         # Clear the current list.
         self.list_comports.clear()
         for p in comports():
             # Found a COM port. Now check if this is 
             self.list_comports.addItem(p.name)
-    
+
     def display_text(self, text, text_type=DockStnReports.NEW):
         if text_type == DockStnReports.NEW:
             self._console_text.append(text)
@@ -141,14 +156,14 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
             self._console_text[-1] = self._console_text[-1] + text
         else:
             self._console_text[-1] = text
-        
+
         # Update the console text.
         self.lbl_console.setText("\n".join(self._console_text))
-    
+
     def update_ui(self):
         # Enable refrsh button.
         self.btn_refresh_comports.setEnabled(len(self._comports) == 0)
-        
+
         # Enable start data reading buttons.
         self.btn_start_data_reading.setEnabled(
             self.list_comports.count() > 0 and
@@ -158,77 +173,127 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
     def _callback_refresh_comports(self):
         self.update_list_of_comports()
         self.update_ui()
-    
+
     def _callback_com_item_changed(self):
         self.update_ui()
-        
+
     def _callback_datetimer(self):
         self.lbl_datetime.setText(dt.now().strftime("%A, %d. %B %Y %I:%M:%S%p"))
     
+    def _callback_data_read_progress_timer(self):
+        """Runs only when the data reading is in progress."""
+        if self._state == ArimuDataReaderStates.READINGFILESLOGGING:
+            if self._readingcurrfile is False:
+                # Call the file logging handler.
+                self._data_read_progress_timer.stop()
+                self._state_handlers[self._state]()
+            print(".")
+
     def _callback_start_reading(self):
         # Get the list of COM ports.
         self._comports = [_it.text() for _it in self.list_comports.selectedItems()]
-        
+
         # State the state machine for reading data.
-        self._state = ArimuDataReaderStates.WaitingToStart
+        self._state = ArimuDataReaderStates.WAITINGTOSTART
         self._state_handlers[self._state]()
         self.update_ui()
-    
+
     def _setup_statehandlrs(self):
         self._state_handlers = {
-            ArimuDataReaderStates.WaitingToStart: self._handle_waiting_to_start,
-            ArimuDataReaderStates.ConnectToDevice: self._handle_connect_to_device,
-            ArimuDataReaderStates.ReadingFilesStart: self._handle_start_reading_files,
+            ArimuDataReaderStates.WAITINGTOSTART: self._handle_waiting_to_start,
+            ArimuDataReaderStates.CONNECTTODEVICE: self._handle_connect_to_device,
+            ArimuDataReaderStates.READINGFILESSTART: self._handle_reading_files_start,
+            ArimuDataReaderStates.READINGFILESLOGGING: self._handle_start_logging_files,
         }
-        
+
     def _handle_arimuwrkr_connect_response(self, devname):
         self._state_handlers[self._state](devname)
-    
+
     def _handle_arimuwrkr_filelist_response(self, filelist):
         # Check if the list is empty.
         if len(filelist) > 0:
             # Check if this is the first packet.
-            self.arimudata.allfilelist += tuple(filelist)
-            self.display_text(f"> Gettting list of files. [{len(self.arimudata.allfilelist):3d}]",
+            self.arimudata['allfiles'] += tuple(filelist)
+            self.display_text(f"> Gettting list of files. [{len(self.arimudata['allfiles']):3d}]",
                               text_type=DockStnReports.OVERWRITE)
         else:
             # Empty list of files. That marks the end of the response.
             # 1. Find the list of files with the 'data' in its name and with
             # the '.bin' extension.
-            self.arimudata.allfilelist = [
-                _f for _f in self.arimudata.allfilelist
+            self.arimudata['allfiles'] = [
+                _f for _f in self.arimudata['allfiles']
                 if "data" in _f and ".bin" in _f
             ]
-            
-            # 2. Separate files by subject.
-            self._organize_allfilist_into_subjlist()
-            self.display_text(f"> Subjects found: {', '.join(self.arimudata.subjs)}",
+
+            # 2. Get subjects from the file list.
+            self.arimudata['subjs'] = list(set([_f.split('_')[0] for _f in self.arimudata['allfiles']]))
+            self.display_text(f"> Subjects found: {', '.join(self.arimudata['subjs'])}",
                               text_type=DockStnReports.NEW)
             
-            # 3. Change state to start getting files for the different subjects.
-            self._state = ArimuDataReaderStates.ReadingFilesStart
-            self._state_handlers[self._state]()
+            # 3. Create subject directories.
+            for _s in self.arimudata['subjs']:
+                # Create subject folders if they do not exist.
+                # Check if the directroy exits, else create it.
+                Path(os.sep.join((self.outdir, _s))).mkdir(parents=True, exist_ok=True)
 
-    def _handle_start_reading_files(self):
-        """Start reading files on the device. This functions does all the 
-        necessary checks to make sure a file needs to be read.
-        """
-        # 1. Create subject folders if they do not exist.
-        for _s in self.arimudata.subjs:
-            Path(os.sep.join((self.outdir, _s))).mkdir(parents=True, exist_ok=True)
-            
-        # 2. Go through alls subjects and files to find out which ones are to
-        # be obtained.
-        for _s, _f in self._subjs_and_files():
-            pass
-        
-        # 3. Obtain the files that need to be obtained.
+            # 3. Change state to start getting files for the different subjects.
+            self._state = ArimuDataReaderStates.READINGFILESSTART
+            self._state_handlers[self._state]()
     
+    def _handle_arimuwrkr_filedata_response(self, filedata):
+        print(filedata)
+
+    def _handle_start_logging_files(self):
+        """Start logging data ready from the device.
+        """
+        # Check if there are still files to get.
+        if len(self.arimudata['toget']) == 0:
+            return
+
+        # Get the next file.
+        _filename, _toget = self.arimudata['toget'].pop(0)
+
+        # Check if files is to be obtained.
+        if _toget is False:
+            return
+
+        # Get file from the device.
+        self.display_text(f"> Getting {_filename}", text_type=DockStnReports.NEW)
+        self._readingcurrfile = True
+        self.arimuwrkr.file_data.connect(self._handle_arimuwrkr_filedata_response)
+        self.arimuwrkr.get_file_data(_filename)
+
+        # Start the data reading progress timer.
+        self._data_read_progress_timer.start(1000)
+
+    def _handle_reading_files_start(self):
+        """Start reading files on the device. This functions generates the list
+        of files that need to be read.
+        """
+        _toget = []
+        for _s in self.arimudata['subjs']:
+            # Get the list of files for this subject.
+            _subjfiles = [_f for _f in self.arimudata['allfiles'] if _s == _f.split('_')[0]]
+            # Existing files.
+            _exstfiles = glob.glob(os.sep.join((self.outdir, _s, "*.bin")))
+            # Files to get
+            _toget += [_f for _f in _subjfiles if _f not in _exstfiles]
+
+        # Update the list of files to get.
+        self.arimudata['toget'] = [
+            (_f, _f in _toget)
+            for _f in self.arimudata['allfiles']
+        ]
+
+        # Change state to start logging files.
+        self._state = ArimuDataReaderStates.READINGFILESLOGGING
+        self._state_handlers[self._state]()
+
     def _handle_waiting_to_start(self, *args):
         """Check if there are any devices from which data is to be read.
         """
         if len(self._comports) == 0:
-            self._state = ArimuDataReaderStates.WaitingToStart
+            self._state = ArimuDataReaderStates.WAITINGTOSTART
             return
         # There are devices from which data is to be read.
         # Create a Arimu worker for this device.
@@ -237,47 +302,64 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
         self.arimuwrkr.connect_response.connect(self._handle_arimuwrkr_connect_response)
         self.arimuwrkr.connect()
         self.display_text(f"> Connecting to {self._comports[0]}.")
-        self._state = ArimuDataReaderStates.ConnectToDevice
+        self._state = ArimuDataReaderStates.CONNECTTODEVICE
         
     def _handle_connect_to_device(self, *args):
         # Check if the device is an ARIMU device.
         if "ARIMU" in args[0]:
             self.display_text(f" Device is {args[0]}.", text_type=DockStnReports.APPEND)
-            # self._state = ArimuDataReaderStates.GetFileList
+            # self._state = ArimuDataReaderStates.GETFILELIST
             self.arimuwrkr.file_list.connect(self._handle_arimuwrkr_filelist_response)
             self.arimuwrkr.get_filelist()
-            self.arimudata.allfilelist = []
-            self.arimudata.subjfilelist = []
-            self.arimudata.subjs = []
-            self.display_text(f"> Gettting list of files.")
+            self.arimudata["allfiles"] = []
+            self.arimudata["subjs"] = []
+            self.arimudata["toget"] = []
+            self.arimudata["got"] = []
+            self.arimudata["notgot"] = []
+            self.arimudata["currfilename"] = []
+            self.arimudata["currfiledata"] = []
+            self.display_text("> Gettting list of files.")
     
     # ######################### #
     # Other supporting funftion #
     # ######################### #
-    def _organize_allfilist_into_subjlist(self):
-        self.arimudata.subjs = list(set([
-            _f.split('_')[0] for _f in self.arimudata.allfilelist
-        ]))
-        _temp = [[] for _s in self.arimudata.subjs]
-        for _f in self.arimudata.allfilelist:
-            _temp[self.arimudata.subjs.index(_f.split('_')[0])].append(_f)
-        self.arimudata.subjfilelist = _temp
+    # def _organize_allfilist_into_subjlist(self):
+    #     self.arimudata['subjs'] = list(set([
+    #         _f.split('_')[0] for _f in self.arimudata['allfiles']
+    #     ]))
+    #     self.arimudata['subjfiles'] = {
+    #         _s: [
+    #             _f for _f in self.arimudata['allfiles']
+    #             if _f.split('_')[0] == _s
+    #         ]
+    #         for _s in self.arimudata['subjs']
+    #     }
         
     def _subjs_and_files(self):
-        for _s, _sf in zip(self.arimudata.subjs, self.arimudata.subjfilelist):
+        for _s, _sf in self.arimudata['subjfiles'].items():
             for _f in _sf:
                 yield _s, _f
-                
-    def _get_prev_files_list(self):
-        """Returns the list of previous files obtained and not obtained from
-        the device."""
-        _files_got = list(
-            itertools.chain(*[v["got"] for v in self.params["files"].values()])
-        )
-        _files_nogot = list(
-            itertools.chain(*[v["nogot"] for v in self.params["files"].values()])
-        )
-        return _files_got, _files_nogot
+    
+    def _get_data_files(self, filedetails, subj):
+        # Display subject details
+        self.display_text(f"> Subject: {subj} (To get: {len(filedetails['toget'])}).",
+                          text_type=DockStnReports.NEW)
+        time.sleep(0.1)
+        # Go through all files and get them.
+        _inx = 0
+        self._readingcurrfile = False
+        while True:
+            # Check if the current file is still being read.
+            if self._readingcurrfile:
+                time.sleep(0.01)
+                continue
+            # Get the next file.
+            _f = filedetails['toget'][_inx]
+            self.display_text(f"> Getting {_f}.", text_type=DockStnReports.NEW)
+            # self.arimuwrkr.file_list.connect(self._handle_arimuwrkr_filedata_response)
+            # self.arimuwrkr.get_file_data(_f)
+            # self.arimudata['subjfiles'][subj]['got'].append(_f)
+            # self.display_text(f" Done.", text_type=DockStnReports.APPEND)
 
     
     #     # Arimu Client.

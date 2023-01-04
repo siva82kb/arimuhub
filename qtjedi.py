@@ -26,9 +26,9 @@ class JediParsingStates(enum.Enum):
 
 
 class JediComm(QThread):
-    
+
     newdata_signal = pyqtSignal(list)
-    
+
     def __init__(self, port, baudrate=115200) -> None:
         super().__init__()
         self._port = port
@@ -37,17 +37,17 @@ class JediComm(QThread):
         self._state = JediParsingStates.LookingForHeader
         self._in_payload = []
         self._out_payload = []
-        
+
         # Payload reading variables.
         self._N = 0
         self._cnt = 0
         self._chksum = 0
-        
+
         # thread related variables.
         self._abort = False
         self._sleeping = False
         # self.setDaemon(False)
-    
+
     @property
     def sleeping(self):
         """ Returns if the thread is sleeping.
@@ -124,6 +124,11 @@ class JediComm(QThread):
                     else:
                         self._state = JediParsingStates.LookingForHeader
                 elif self._state == JediParsingStates.FoundHeader2:
+                    # Payload size cannot be zero.
+                    if ord(_byte) == 0:
+                        self._state = JediParsingStates.LookingForHeader
+                        continue
+                    # Payload size is not zero.
                     self._N = ord(_byte)
                     self._cnt = 0
                     self._chksum = 255 + 255 + self._N
@@ -140,7 +145,7 @@ class JediComm(QThread):
                         self._state = JediParsingStates.FoundFullPacket
                     else:
                         self._state = JediParsingStates.LookingForHeader
-                
+
                 # Handle full packet.
                 if self._state == JediParsingStates.FoundFullPacket:
                     self.newdata_signal.emit(self._in_payload)
@@ -152,7 +157,7 @@ class JediComm(QThread):
 if __name__ == '__main__':
     def print_packet(packet):
         print("New packet: ", packet)
-    
+
     jedireader = JediComm("COM16", 115200, print_packet)
     jedireader.start()
     time.sleep(10)
