@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/arimu_dreader.ui'
+# Form implementation generated from reading ui file 'ui\arimu_dreader.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -37,7 +37,7 @@ class Ui_ArimuDataReader(object):
         self.lbl_datetime.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.lbl_datetime.setObjectName("lbl_datetime")
         self.lbl_console = QtWidgets.QLabel(self.centralwidget)
-        self.lbl_console.setGeometry(QtCore.QRect(190, 50, 591, 371))
+        self.lbl_console.setGeometry(QtCore.QRect(190, 50, 591, 351))
         font = QtGui.QFont()
         font.setFamily("Anonymous Pro")
         font.setPointSize(10)
@@ -48,22 +48,29 @@ class Ui_ArimuDataReader(object):
         self.lbl_console.setText("")
         self.lbl_console.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.lbl_console.setObjectName("lbl_console")
-        self.widget = QtWidgets.QWidget(self.centralwidget)
-        self.widget.setGeometry(QtCore.QRect(10, 50, 171, 371))
-        self.widget.setObjectName("widget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
+        self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.layoutWidget.setGeometry(QtCore.QRect(10, 50, 171, 371))
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.layoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.btn_refresh_comports = QtWidgets.QPushButton(self.widget)
+        self.btn_refresh_comports = QtWidgets.QPushButton(self.layoutWidget)
         self.btn_refresh_comports.setObjectName("btn_refresh_comports")
         self.verticalLayout.addWidget(self.btn_refresh_comports)
-        self.list_comports = QtWidgets.QListWidget(self.widget)
+        self.list_comports = QtWidgets.QListWidget(self.layoutWidget)
         self.list_comports.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.list_comports.setObjectName("list_comports")
         self.verticalLayout.addWidget(self.list_comports)
-        self.btn_start_data_reading = QtWidgets.QPushButton(self.widget)
+        self.btn_start_data_reading = QtWidgets.QPushButton(self.layoutWidget)
         self.btn_start_data_reading.setObjectName("btn_start_data_reading")
         self.verticalLayout.addWidget(self.btn_start_data_reading)
+        self.lbl_status = QtWidgets.QLabel(self.centralwidget)
+        self.lbl_status.setGeometry(QtCore.QRect(190, 402, 591, 20))
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.lbl_status.setFont(font)
+        self.lbl_status.setText("")
+        self.lbl_status.setObjectName("lbl_status")
         ArimuDataReader.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(ArimuDataReader)
@@ -75,4 +82,14 @@ class Ui_ArimuDataReader(object):
         self.lbl_title.setText(_translate("ArimuDataReader", "  Arimu Data Reader"))
         self.btn_refresh_comports.setText(_translate("ArimuDataReader", "Refresh COM Ports"))
         self.btn_start_data_reading.setText(_translate("ArimuDataReader", "Start Reading"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    ArimuDataReader = QtWidgets.QMainWindow()
+    ui = Ui_ArimuDataReader()
+    ui.setupUi(ArimuDataReader)
+    ArimuDataReader.show()
+    sys.exit(app.exec_())
 

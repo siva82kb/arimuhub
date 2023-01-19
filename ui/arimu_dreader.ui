@@ -76,7 +76,7 @@ color: rgb(170, 0, 0);
       <x>190</x>
       <y>50</y>
       <width>591</width>
-      <height>371</height>
+      <height>351</height>
      </rect>
     </property>
     <property name="font">
@@ -102,7 +102,7 @@ background-color: rgb(0, 0, 0);</string>
      <number>10</number>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -134,6 +134,24 @@ background-color: rgb(0, 0, 0);</string>
       </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QLabel" name="lbl_status">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>402</y>
+      <width>591</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
    </widget>
   </widget>
  </widget>

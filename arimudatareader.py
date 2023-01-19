@@ -80,6 +80,8 @@ class ArimuDataReaderStates(enum.Enum):
 class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
     """Main window of the ARIMU Data Reader.
     """
+    # Watch dog time threshold
+    WATCHDOG_THRESHOLD = 5
     close_signal = pyqtSignal()
 
     def __init__(self, *args, **kwargs) -> None:
@@ -92,11 +94,15 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
                           self.geometry().height())
 
         # Set up console variables
-        self._max_lines = 37
+        self._max_lines = 24
         self._console_text = []
         self.display_text("ARIMU Data Reader")
         self.display_text("-----------------")
         self.display_text("Please selecte ARIMUs to read data from.")
+        
+        # Status text
+        self._statustext = ''
+        self._datarate = 0
 
         # Search COM ports with ARIMUs connected.
         self._comports = []
@@ -115,7 +121,7 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
                           "toget": [],
                           "got": [],
                           "notgot": [],
-                          "currfilename": [],
+                          "currfilename": '',
                           "currfiledata": []}
 
         # ARIMU individual file reading flag.
@@ -134,9 +140,9 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
         self._datetimer.timeout.connect(self._callback_datetimer)
         self._datetimer.start(1000)
         # A Timer that is activated when the data reading is in progress.
+        self._watchdogcounter = 0
         self._data_read_progress_timer = QTimer()
         self._data_read_progress_timer.timeout.connect(self._callback_data_read_progress_timer)
-        # self._data_read_progress_timer.start(1000)
         
         self.update_ui()
 
@@ -160,6 +166,15 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
         # Update the console text.
         self.lbl_console.setText("\n".join(self._console_text))
 
+    def status_text(self, text, text_type=DockStnReports.NEW):
+        if text_type == DockStnReports.NEW:
+            self._statustext = text
+        else:
+            self._statustext += text
+
+        # Update the console text.
+        self.lbl_status.setText(self._statustext)
+
     def update_ui(self):
         # Enable refrsh button.
         self.btn_refresh_comports.setEnabled(len(self._comports) == 0)
@@ -179,15 +194,32 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
 
     def _callback_datetimer(self):
         self.lbl_datetime.setText(dt.now().strftime("%A, %d. %B %Y %I:%M:%S%p"))
-    
+
     def _callback_data_read_progress_timer(self):
         """Runs only when the data reading is in progress."""
         if self._state == ArimuDataReaderStates.READINGFILESLOGGING:
+            # Check the watchdog counter
+            self._watchdogcounter += 1
+            if self._watchdogcounter == ArimuDataReader.WATCHDOG_THRESHOLD:
+                self.status_text("WD: ON | ")
+                # The watchdog has timed out. Stop the data reading.
+                _str = f"> Getting {self.arimudata['currfilename']} ... Failed!"
+                self.display_text(_str, text_type=DockStnReports.OVERWRITE)
+                # Move read file to "got" and clear reading file flag.
+                self.arimudata['notgot'].append(self.arimudata['currfilename'])
+                self._readingcurrfile = False
+            else:
+                self.status_text("WD: OFF | ")
+            
+            # Update date rate
+            self.status_text(f"{self._datarate / 1024:3.1f} kBps | ", text_type=DockStnReports.APPEND)
+            self._datarate = 0
+            
+            # Check if current file is done.
             if self._readingcurrfile is False:
                 # Call the file logging handler.
                 self._data_read_progress_timer.stop()
                 self._state_handlers[self._state]()
-            print(".")
 
     def _callback_start_reading(self):
         # Get the list of COM ports.
@@ -239,27 +271,63 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
             # 3. Change state to start getting files for the different subjects.
             self._state = ArimuDataReaderStates.READINGFILESSTART
             self._state_handlers[self._state]()
-    
+
     def _handle_arimuwrkr_filedata_response(self, filedata):
-        print(filedata)
+        # Check if its the file header
+        self._watchdogcounter = 0
+        if filedata[0] == ArimuAdditionalFlags.NOFILE:
+            # The current file was not found. Skip the current file.
+            pass
+        elif filedata[0] == ArimuAdditionalFlags.FILEHEADER:
+            # Header of the current file. Create a new file.
+            pass
+        elif filedata[0] == ArimuAdditionalFlags.FILECONTENT:
+            # Content of the current file. Save file data.
+            self.arimudata['currfiledata'] += filedata[1][1:]
+            _filestoget = [_f[0] for _f in self.arimudata['toget'] if _f[1] is True]
+            _str = " ".join((f"> Getting {self.arimudata['currfilename']}",
+                            f"({100 * filedata[1][0] / 255:3.1f}%)",
+                            f"[{len(_filestoget):3d} files left]"))
+            self.display_text(_str, text_type=DockStnReports.OVERWRITE)
+            # Numnber of bytes obtained.
+            self._datarate += len(filedata[1][1:])
+            # Check if this is the last packet.
+            if filedata[1][0] == 255:
+                # All data obtained. Write data to file.
+                # Get subject name.
+                _s = self.arimudata['currfilename'].split('_', maxsplit=1)[0]
+                with open(os.sep.join((self.outdir, _s, self.arimudata['currfilename'])), 'wb') as _f:
+                    _f.write(bytearray(self.arimudata['currfiledata']))
+                _str = f"> Getting {self.arimudata['currfilename']} ... Done!"
+                self.display_text(_str, text_type=DockStnReports.OVERWRITE)
+
+                # Move read file to "got" and clear reading file flag.
+                self.arimudata['got'].append(self.arimudata['currfilename'])
+                self._readingcurrfile = False
 
     def _handle_start_logging_files(self):
         """Start logging data ready from the device.
         """
+        # Get the next file.
+        _toget = False
+        while _toget is False and len(self.arimudata['toget']) > 0:
+            _filename, _toget = self.arimudata['toget'].pop(0)
+            
         # Check if there are still files to get.
         if len(self.arimudata['toget']) == 0:
+            print("Got everything dude!")
             return
-
-        # Get the next file.
-        _filename, _toget = self.arimudata['toget'].pop(0)
-
-        # Check if files is to be obtained.
-        if _toget is False:
-            return
-
+        
         # Get file from the device.
         self.display_text(f"> Getting {_filename}", text_type=DockStnReports.NEW)
+        self.arimudata['currfilename'] = _filename
+        self.arimudata['currfiledata'] = []
         self._readingcurrfile = True
+        # Connect file data handler if it is not already connected.
+        try:
+            self.arimuwrkr.file_data.disconnect()
+        except TypeError:
+            pass
         self.arimuwrkr.file_data.connect(self._handle_arimuwrkr_filedata_response)
         self.arimuwrkr.get_file_data(_filename)
 
@@ -275,7 +343,8 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
             # Get the list of files for this subject.
             _subjfiles = [_f for _f in self.arimudata['allfiles'] if _s == _f.split('_')[0]]
             # Existing files.
-            _exstfiles = glob.glob(os.sep.join((self.outdir, _s, "*.bin")))
+            _exstfiles = [_ef.split(os.sep)[-1]
+                          for _ef in glob.glob(os.sep.join((self.outdir, _s, "*.bin")))]
             # Files to get
             _toget += [_f for _f in _subjfiles if _f not in _exstfiles]
 
@@ -316,7 +385,7 @@ class ArimuDataReader(QtWidgets.QMainWindow, Ui_ArimuDataReader):
             self.arimudata["toget"] = []
             self.arimudata["got"] = []
             self.arimudata["notgot"] = []
-            self.arimudata["currfilename"] = []
+            self.arimudata["currfilename"] = ''
             self.arimudata["currfiledata"] = []
             self.display_text("> Gettting list of files.")
     

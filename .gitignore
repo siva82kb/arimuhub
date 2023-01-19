@@ -133,4 +133,5 @@ data/
 logs/
 private/
 streamdata/
+subjectdata/
 dist.zip

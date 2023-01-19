@@ -77,7 +77,8 @@ class ArimuDocWorker(QObject):
 
     # Different signals used to communicate with external PyQT programs.
     connect_response = pyqtSignal(str)
-    delayed_respose = pyqtSignal(ArimuCommands)
+    # delayed_respose = pyqtSignal(ArimuCommands)
+    delayed_respose = pyqtSignal(int)
     file_list = pyqtSignal(list)
     file_data = pyqtSignal(list)
 
@@ -192,11 +193,11 @@ class ArimuDocWorker(QObject):
         for a sent command."""
         # Check if the response was obtained.
         # print("response not found")
-        print(self.resp.msgtype)
+        # print(self.resp.msgtype)
         if self.resp.msgtype != None:
             # No response receied for some time. Cancel response, and inform
             # about the lack of response.
-            self.delayed_respose.emit(self.resp.msgtype)
+            self.delayed_respose.emit(int(self.resp.msgtype))
             self.clear_response()
     
     def _handle_new_arimu_packets(self, payload):
@@ -246,18 +247,20 @@ class ArimuDocWorker(QObject):
         _str = bytearray(pl[:]).decode()
         if len(_str) == 0:
             self.file_list.emit([])
+            return
+        # Non-zero payload
         if _str[0] != '[':
             # Create a new list.
             _temp = _str[0:-1].split(",")
         else:
             _temp = _str[1:-1].split(",")
         self.file_list.emit([_fl for _fl in _temp if len(_fl) > 0])
-        
+
         # Check if end of list is reached.
         if _str[-1] == ']':
             # Clear file list and include only non-zero length file names.
             self.file_list.emit([])
-            
+
     def _update_filedata(self, pl):
         """Update the file data on the device.
         """
@@ -267,24 +270,10 @@ class ArimuDocWorker(QObject):
             # Unpack and emit file details.
             _totsz = struct.unpack('<L', bytearray(pl[1:5]))[0]
             self.file_data.emit([ArimuAdditionalFlags.FILEHEADER, _totsz])
-        # elif pl[0] == ArimuAdditionalFlags.FILECONTENT:
-        #     # Write to file.
-        #     self._currfiledetails.currsz += len(pl[2:])
-        #     # Update progress bar
-        #     _pbstr, _prcnt = self._currfiledetails.prgbar.update(pl[1])
-        #     self._currfiledetails.handle.write(bytearray(pl[2:]))
-        #     # Display string
-        #     _str = [f"|{_pbstr}|",
-        #             f"[{_prcnt:6.2f}%]",
-        #             f"[{self._currfiledetails.currsz/1024:8.2f}kB /",
-        #             f"{self._currfiledetails.totalsz/1024:8.2f}kB]",]
-        #     self.lbl_status.setText(f"{' '.join(_str)}")
-        #     # Check if the file has been obtained.
-        #     if _prcnt >= 100:
-        #         self._statusdisp = False
-        #         self._currfiledetails.handle
-        #         self.display_response(f"File data reading done! File {self._currfiledetails.name} saved!")
-    
+        elif pl[0] == ArimuAdditionalFlags.FILECONTENT:
+            # Send byte data.
+            self.file_data.emit([ArimuAdditionalFlags.FILECONTENT, bytearray(pl[1:])])
+
     def _update_docstnstart(self, pl):
         """Function to handle when the DOCKSTATION mode is started.
         """
