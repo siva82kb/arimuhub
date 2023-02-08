@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import (
 from arimu_hub_ui import Ui_ArimuHub
 
 from arimudevmanager import ArimuDeviceManager
-from arimudatareader import ArimuDataReader
 
 class ArimuHub(QtWidgets.QMainWindow, Ui_ArimuHub):
     """Main window of the ArimuHub.
@@ -39,9 +38,6 @@ class ArimuHub(QtWidgets.QMainWindow, Ui_ArimuHub):
         self.btn_data_reader.clicked.connect(self._callback_data_reader)
         self.btn_streaming.clicked.connect(self._callback_streaming)
         self.btn_about.clicked.connect(self._callback_about)
-        
-        # Update UI
-        self.update_ui()
     
     def set_at_reasonable_location_on_the_screen(self):
         sg = QDesktopWidget().screenGeometry()
@@ -50,12 +46,10 @@ class ArimuHub(QtWidgets.QMainWindow, Ui_ArimuHub):
         self.move(x, y)
     
     def update_ui(self):
-        # self.btn_about.setEnabled(self.currwin is None)
-        self.btn_about.setEnabled(False)
+        self.btn_about.setEnabled(self.currwin is None)
         self.btn_data_reader.setEnabled(self.currwin is None)
         self.btn_dev_manager.setEnabled(self.currwin is None)
-        # self.btn_streaming.setEnabled(self.currwin is None)
-        self.btn_streaming.setEnabled(False)
+        self.btn_streaming.setEnabled(self.currwin is None)
 
     def _callback_dev_manager(self):
         if self.currwin is None:
@@ -67,12 +61,6 @@ class ArimuHub(QtWidgets.QMainWindow, Ui_ArimuHub):
         self.update_ui()
 
     def _callback_data_reader(self):
-        if self.currwin is None:
-            # Start webcam viewer
-            self.currwin = ArimuDataReader()
-            # Attach close call back function.
-            self.currwin.close_signal.connect(self._callback_dev_manager_close)
-            self.currwin.show()
         self.update_ui()
 
     def _callback_streaming(self):

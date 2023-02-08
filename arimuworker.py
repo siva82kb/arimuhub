@@ -81,7 +81,7 @@ class ArimuDocWorker(QObject):
     delayed_respose = pyqtSignal(int)
     file_list = pyqtSignal(list)
     file_data = pyqtSignal(list)
-    file_delete = pyqtSignal()
+
 
     def __init__(self, comport, subject, outdir, donotdelete=False):
         super(ArimuDocWorker, self).__init__()
@@ -95,9 +95,6 @@ class ArimuDocWorker(QObject):
         # ARIMU related variables
         self._arimustate = None
         self._arimuerr = None
-        #
-        # Client
-        self._client = None
         #
         # A flag for when a section of the code is waiting for response from
         # the ARIMU device.
@@ -147,35 +144,6 @@ class ArimuDocWorker(QObject):
                             self._update_connect_status)
         self._client.send_message([ArimuCommands.PING])
         self.resp.timer.start()
-    
-    def disconnect(self):
-        """Disconnect the COM port."""
-        self._client.abort()
-        if self.resp.timer is not None:
-            self.clear_response()
-
-    def set_time(self):
-        """Set the current time on the connected ARIMU."""
-        if self._arimustate != ArimuStates.DOCKSTNCOMM:
-            # First set the device in the docking station mode.
-            # Set the device in the docking station mode.
-            self.setup_response(ArimuCommands.STARTDOCKSTNCOMM,
-                                self._update_docstnstart)
-            self._dockstn_start_function = self.set_time
-            self._client.send_message([ArimuCommands.STARTDOCKSTNCOMM])
-            self.resp.timer.start()
-            return
-
-        # Now set the time.
-        _dtvalue = dt.now()
-        _dtbytes = (struct.pack("<L", _dtvalue.year % 100)
-                    + struct.pack("<L", _dtvalue.month)
-                    + struct.pack("<L", _dtvalue.day)
-                    + struct.pack("<L", _dtvalue.hour)
-                    + struct.pack("<L", _dtvalue.minute)
-                    + struct.pack("<L", _dtvalue.second)
-                    + struct.pack("<L", _dtvalue.microsecond // 10000))
-        self._client.send_message(bytearray([ArimuCommands.SETTIME]) + _dtbytes)
 
     def get_filelist(self):
         """Gets the list of file names from the ARIMU device, and informs
@@ -184,6 +152,7 @@ class ArimuDocWorker(QObject):
         if self._arimustate != ArimuStates.DOCKSTNCOMM:
             # First set the device in the docking station mode.
             # Set the device in the docking station mode.
+            print("--")
             self.setup_response(ArimuCommands.STARTDOCKSTNCOMM,
                                 self._update_docstnstart)
             self._dockstn_start_function = self.get_filelist
@@ -215,28 +184,6 @@ class ArimuDocWorker(QObject):
         self.setup_response(ArimuCommands.GETFILEDATA,
                             self._update_filedata)
         self._client.send_message(bytearray([ArimuCommands.GETFILEDATA])
-                                  + bytearray(filename, "ascii")
-                                  + bytearray([0]))
-        self.resp.timer.start()
-
-    def delete_file(self, filename):
-        """Delete a file with filename from the ARIMU device."""
-        # Check if the device is in the dockstation mode.
-        if self._arimustate != ArimuStates.DOCKSTNCOMM:
-            # First set the device in the docking station mode.
-            # Set the device in the docking station mode.
-            self.setup_response(ArimuCommands.STARTDOCKSTNCOMM,
-                                self._update_docstnstart)
-            self._dockstn_start_function = self.delete_file
-            self._client.send_message([ArimuCommands.STARTDOCKSTNCOMM])
-            self.resp.timer.start()
-            return
-
-        # Now get the list of files.
-        print("del ")
-        self.setup_response(ArimuCommands.DELETEFILE,
-                            self._update_deletefile)
-        self._client.send_message(bytearray([ArimuCommands.DELETEFILE])
                                   + bytearray(filename, "ascii")
                                   + bytearray([0]))
         self.resp.timer.start()
@@ -277,6 +224,7 @@ class ArimuDocWorker(QObject):
     def clear_response(self):
         """Clears resp to indicate that we are not expecting any new responses
         from ARIMU."""
+        # print("lala")
         self.resp.timer.cancel()
         self.resp.msgtype = None
         self.resp.callback = None
@@ -306,7 +254,7 @@ class ArimuDocWorker(QObject):
             _temp = _str[0:-1].split(",")
         else:
             _temp = _str[1:-1].split(",")
-        self.file_list.emit([[_fl for _fl in _temp if len(_fl) > 0]])
+        self.file_list.emit([_fl for _fl in _temp if len(_fl) > 0])
 
         # Check if end of list is reached.
         if _str[-1] == ']':
@@ -326,11 +274,6 @@ class ArimuDocWorker(QObject):
             # Send byte data.
             self.file_data.emit([ArimuAdditionalFlags.FILECONTENT, bytearray(pl[1:])])
 
-    def _update_deletefile(self, pl):
-        """Function to handle when the DELETEFILE command is sent.
-        """
-        self.file_delete.emit()
-    
     def _update_docstnstart(self, pl):
         """Function to handle when the DOCKSTATION mode is started.
         """
